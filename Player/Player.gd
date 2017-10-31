@@ -7,6 +7,7 @@ var down  = Vector2(0,  1)
 
 var hasBombed = false
 var bombs = 1
+var bombRange = 1
 var torchPos
 var bombScene
 onready var timer = Timer.new()
@@ -20,13 +21,11 @@ func _ready():
 	set_fixed_process(true)
 	set_process_input(true)
 	
-
 	timer.connect("timeout",self,"_on_timer_timeout")
 	add_child(timer)
 	timer.start()
 
 func _fixed_process(delta):
-
 	#Shooting
 	if Input.is_action_pressed("shoot") and !hasBombed and bombs > 0:
 		shoot()
@@ -66,26 +65,29 @@ func _input(event):
 func shoot():
 	var bomb = load("res://Bomb/Bomb.tscn").instance()
 	var explodeTimer = Timer.new()
-	explodeTimer.connect("timeout", bomb, "explode")
+	explodeTimer.connect("timeout", bomb, "explode", [ self ], CONNECT_ONESHOT)
 	explodeTimer.set_wait_time(3.0)
 	get_parent().add_child(bomb)
 	bomb.add_child(explodeTimer)
 	explodeTimer.start()
-	
+	bomb.bombRange = self.bombRange
 	bomb.set_pos(self.get_pos().snapped(Vector2(32, 32)))
+	print(fmod(self.get_pos().normalized().x, 8.0))
 	
 	### Save this, will probably need for kicking power
 	
 	#var rigidbody_vector = (get_global_mouse_pos() - torchPos.get_global_pos()).normalized()
 	#bullet.apply_impulse(bullet.get_pos(), rigidbody_vector*shootSpeed)
 	hasBombed = true
-	#bombs -= 1
+	bombs -= 1
 	timer.set_wait_time( 0.5 )
 	timer.start()
 
 func _on_timer_timeout():
 	hasBombed = false
 
+func giveBombBack():
+	bombs+=1
 
 func damage(dmg):
 	health-=dmg
@@ -93,5 +95,5 @@ func damage(dmg):
 		die()
 
 func die():
-	#self.queue_free()
+	self.queue_free()
 	pass
