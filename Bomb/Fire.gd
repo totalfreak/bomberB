@@ -13,26 +13,34 @@ var shouldMakeNextFire = true
 
 func _ready():
 	self.set_global_pos(nextPos)
-	self.connect("body_enter", self, "destroy", [ ], CONNECT_DEFERRED)
+	
 	#self.connect("body_enter", self, "stop", [ ], CONNECT_DEFERRED)
 	nextTimer.connect("timeout", self, "makeNextFire", [], CONNECT_ONESHOT)
 	self.add_child(nextTimer)
 	nextTimer.set_wait_time(0.02)
 	nextTimer.start()
+	self.connect("body_enter", self, "destroy", [ ], CONNECT_ONESHOT)
 
 func destroy(body):
-	print(body)
-	if !body.is_in_group("player") and body.get_name() != "TileMap":
-		shouldMakeNextFire = false
-		nextTimer.stop()
-		print(body.get_name())
-		ogBomb.toBeDestroyed.append(body.get_parent())
-	elif body.get_name() == "TileMap":
+	if body.is_in_group("tilemap"):
 		shouldMakeNextFire = false
 		nextTimer.stop()
 		queue_free()
-	else:
+	elif body.is_in_group("box"):
+		shouldMakeNextFire = false
+		nextTimer.stop()
+		print("Found box!")
+		ogBomb.toBeDestroyed.append(body.get_parent())
+	elif body.is_in_group("bomb") and body.get_parent() != ogBomb:
+		body.get_parent().explode()
+		shouldMakeNextFire = false
+		nextTimer.stop()
+		queue_free()
+	elif body.is_in_group("player"):
 		body.die()
+	elif body.is_in_group("powerup"):
+		body.get_parent().queue_free()
+	#self.get_node("Fire Particle").set_self_opacity(1)
 
 func makeNextFire():
 	bombRange -= 1

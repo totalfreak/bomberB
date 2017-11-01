@@ -5,6 +5,8 @@ var right = Vector2( 1, 0)
 var up    = Vector2(0, -1)
 var down  = Vector2(0,  1)
 
+export var playerNumber = 1
+
 var hasBombed = false
 var bombs = 1
 var bombRange = 1
@@ -15,9 +17,10 @@ onready var timer = Timer.new()
 var health = 1
 
 const MOVE_SPEED = 120
-var run_mult = 1
+var run_mult
 
 func _ready():
+	run_mult = 1
 	set_fixed_process(true)
 	set_process_input(true)
 	
@@ -27,23 +30,23 @@ func _ready():
 
 func _fixed_process(delta):
 	#Shooting
-	if Input.is_action_pressed("shoot") and !hasBombed and bombs > 0:
+	if Input.is_action_pressed("shoot" + str(playerNumber)) and !self.hasBombed and self.bombs > 0:
 		shoot()
 	
 	#Reseting velocity
 	var velocity = Vector2()
 	
 	#Moving left and right
-	if Input.is_action_pressed("move_left"):
+	if Input.is_action_pressed("move_left" + str(playerNumber)):
 		velocity += left
 		
-	elif Input.is_action_pressed("move_right"):
+	elif Input.is_action_pressed("move_right" + str(playerNumber)):
 		velocity += right
 	
 	#Moving up and down
-	if Input.is_action_pressed("move_up"):
+	if Input.is_action_pressed("move_up" + str(playerNumber)):
 		velocity += up
-	elif Input.is_action_pressed("move_down"):
+	elif Input.is_action_pressed("move_down" + str(playerNumber)):
 		velocity += down
 	
 	velocity *= run_mult
@@ -64,16 +67,18 @@ func _input(event):
 
 func shoot():
 	var bomb = load("res://Bomb/Bomb.tscn").instance()
+	bomb.player = self
 	var explodeTimer = Timer.new()
-	explodeTimer.connect("timeout", bomb, "explode", [ self ], CONNECT_ONESHOT)
+	explodeTimer.connect("timeout", bomb, "explode", [ ], CONNECT_ONESHOT)
 	explodeTimer.set_wait_time(3.0)
 	get_parent().add_child(bomb)
+	
 	bomb.add_child(explodeTimer)
 	explodeTimer.start()
 	bomb.bombRange = self.bombRange
 	bomb.set_pos(self.get_pos().snapped(Vector2(32, 32)))
-	print(fmod(self.get_pos().normalized().x, 8.0))
-	
+	bomb.set_pos(bomb.get_pos().snapped(Vector2(64, 64)) - Vector2(32, 32))
+	print(fmod(self.get_pos().snapped(Vector2(32, 32)).normalized().x, 32))
 	### Save this, will probably need for kicking power
 	
 	#var rigidbody_vector = (get_global_mouse_pos() - torchPos.get_global_pos()).normalized()
@@ -93,6 +98,10 @@ func damage(dmg):
 	health-=dmg
 	if health <= 0:
 		die()
+
+func moreRunMult(amount):
+	run_mult += amount
+	print(run_mult)
 
 func die():
 	self.queue_free()
